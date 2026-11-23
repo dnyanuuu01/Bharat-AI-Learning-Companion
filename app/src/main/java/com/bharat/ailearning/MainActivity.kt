@@ -3,6 +3,7 @@ package com.bharat.ailearning
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
@@ -59,7 +60,7 @@ fun BharatAITeacherApp() {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "100% Offline • Voice • 22 Languages • School, UG/PG, Health & Sports",
+            text = "100% Offline • Voice & Image • 22 Languages • Study, Health & Sports",
             fontSize = 11.sp
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -128,70 +129,105 @@ fun BharatAITeacherApp() {
 }
 
 @Composable
-fun SyllabusGuideScreen(selectedCourse: String) {
-    Text("School, UG & PG Complete Syllabus Guide", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-    Text("Active Course/Goal: $selectedCourse", fontSize = 12.sp)
-    Spacer(modifier = Modifier.height(8.dp))
+fun ChatScreen(exam: String, lang: String, weak: String, state: String) {
+    val context = LocalContext.current
+    var question by remember { mutableStateOf("") }
+    var simpleMode by remember { mutableStateOf(true) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var lastAiReply by remember {
+        mutableStateOf("नमस्ते! मैं आपका ऑफ़लाइन AI गुरु हूँ। आप बोलकर, लिखकर या किताब/सवाल की फोटो चुनकर अपना डाउट पूछ सकते हैं।")
+    }
+    var chatHistory by remember { mutableStateOf("AI Guru ($lang): $lastAiReply") }
 
-    val syllabusList = listOf(
-        "💻 1. UG/PG Engineering & IT (B.Tech / BCA / M.Tech / MCA):\n• Core Syllabus: Engineering Maths, Data Structures & Algorithms (DSA), Operating Systems, DBMS, Computer Networks, AI/ML, Thermodynamics/Circuits.\n• Next Step: GATE, ISRO/DRDO Scientist, PSU Jobs & Software Placements.",
-        "🩺 2. UG/PG Medical & AYUSH (MBBS / BAMS / BHMS / BDS / Nursing / Pharma):\n• MBBS/BDS Syllabus: Anatomy, Physiology, Biochemistry, Pathology, Pharmacology, Microbiology, Medicine & Surgery.\n• BAMS/BHMS Syllabus: Rachana Sharir, Kriya Sharir, Dravyaguna, Kayachikitsa, Organon of Medicine & Materia Medica.\n• Next Step: NEET PG / NEXT, INI-CET, AIAPGET & Govt Medical Officer.",
-        "⚖️ 3. UG/PG Law & Judiciary (BA LLB / LLB / LLM):\n• Core Syllabus: Constitutional Law of India, Bharatiya Nyaya Sanhita (BNS), Contract Act, Jurisprudence, Family Law, Property & Corporate Law.\n• Next Step: CLAT PG, Judiciary Exam (PCS-J), UPSC Law & Supreme/High Court Practice.",
-        "🔬 4. UG/PG Science, Arts & Commerce (B.Sc/M.Sc, BA/MA, ://b.com, BBA/MBA):\n• Science/Research: Physics, Chemistry, Maths, Life Sciences, Agriculture & Data Science.\n• Arts/Commerce/Mgmt: Economics, Polity, History, Accounting, Finance, Marketing & HR.\n• Next Step: CSIR NET / UGC NET (JRF & Professor), UPSC, CAT, CA/CS & Ph.D.",
-        "📚 5. School & Entrance (Class 7th–12th, JEE, NEET, CUET):\n• Core Syllabus: Complete NCERT (Physics, Chemistry, Maths, Biology, Social Science, English & Reasoning) + Previous Year Questions (PYQs)."
-    )
+    val tts = remember {
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val locale = when {
+                    lang.contains("English") -> Locale.ENGLISH
+                    lang.contains("Bengali") -> Locale("bn", "IN")
+                    lang.contains("Marathi") -> Locale("mr", "IN")
+                    lang.contains("Tamil") -> Locale("ta", "IN")
+                    lang.contains("Telugu") -> Locale("te", "IN")
+                    lang.contains("Gujarati") -> Locale("gu", "IN")
+                    else -> Locale("hi", "IN")
+                }
+                engine?.language = locale
+            }
+        }
+        engine
+    }
 
-    syllabusList.forEach { item ->
-        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text(text = item, modifier = Modifier.padding(10.dp), fontSize = 13.sp)
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
         }
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProfileScreen(
-    name: String,
-    state: String,
-    exam: String,
-    lang: String,
-    hours: String,
-    weak: String,
-    onSave: (String, String, String, String, String, String) -> Unit
-) {
-    var tempName by remember { mutableStateOf(name) }
-    var tempState by remember { mutableStateOf(state) }
-    var tempExam by remember { mutableStateOf(exam) }
-    var tempLang by remember { mutableStateOf(lang) }
-    var tempHours by remember { mutableStateOf(hours) }
-    var tempWeak by remember { mutableStateOf(weak) }
-    var examExpanded by remember { mutableStateOf(false) }
-    var langExpanded by remember { mutableStateOf(false) }
-    var savedMsg by remember { mutableStateOf(false) }
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!matches.isNullOrEmpty()) {
+                question = matches[0]
+            }
+        }
+    }
 
-    val allCoursesAndExams = listOf(
-        "School: Class 7th – 8th (CBSE / State Board / NMMS)",
-        "School: Class 9th – 10th Board Exam (Matric)",
-        "School: Class 11th – 12th (Science / Commerce / Arts)",
-        "Entrance: JEE Main & Advanced (Engineering)",
-        "Entrance: NEET UG (MBBS / BAMS / BHMS / BDS)",
-        "Entrance: IISER / NISER / NEST (Research)",
-        "Entrance: CUET UG / PG (Central Universities)",
-        "UG: B.Tech / B.E. (Engineering & Technology)",
-        "UG: MBBS / BDS (Allopathic Medical)",
-        "UG: BAMS / BHMS / BUMS (AYUSH Medical)",
-        "UG: B.Sc. Nursing / B.Pharm / Paramedical",
-        "UG: BA LLB / LLB (Law)",
-        "UG: B.Sc. / B.Sc. Agriculture / BCA",
-        "UG: BA / B.Com / BBA",
-        "PG: M.Tech / MS / MCA (Tech & Engineering)",
-        "PG: MD / MS / MDS / AIAPGET (Medical PG)",
-        "PG: LLM / Judiciary (PCS-J)",
-        "PG: M.Sc. / MA / M.Com / MBA",
-        "Govt Exam: UPSC Civil Services (IAS / IPS)",
-        "Govt Exam: SSC CGL / CHSL / Banking / NDA",
-        "PG/Research Exam: GATE / CSIR NET / UGC NET (JRF)",
-        "Sports & Skills: Khelo India / National Trials / Coding"
+    // Offline Gallery Image Picker
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedImageUri = uri
+            chatHistory += "\n\n📷 [Offline Image Attached]: सवाल की फोटो लोड हो गई है। कृपया नीचे इस सवाल का टॉपिक या मुख्य शब्द लिखें/बोलें ताकि AI हल दे सके।"
+        }
+    }
+
+    Text("Offline AI Voice, Image & Text Tutor", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    Text("Language: $lang | Course: $exam", fontSize = 12.sp)
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Checkbox(checked = simpleMode, onCheckedChange = { simpleMode = it })
+        Text("Explain Like I'm 10 (आसान भाषा में समझाएं)", modifier = Modifier.padding(top = 12.dp), fontSize = 12.sp)
+    }
+
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(text = chatHistory, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = {
+                    tts?.speak(lastAiReply, TextToSpeech.QUEUE_FLUSH, null, null)
+                }) {
+                    Text("🔊 सुनें", fontSize = 12.sp)
+                }
+                OutlinedButton(onClick = { tts?.stop() }) {
+                    Text("⏹️ रोकें", fontSize = 12.sp)
+                }
+                OutlinedButton(onClick = { imagePickerLauncher.launch("image/*") }) {
+                    Text("📷 फोटो चुनें", fontSize = 12.sp)
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = question,
+        onValueChange = { question = it },
+        label = { Text("बोलें या अपना सवाल लिखें ($lang)...") },
+        modifier = Modifier.fillMaxWidth()
     )
+    Spacer(modifier = Modifier.height(8.dp))
 
-    val constitutionalLanguages = listOf(
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Button(
+            onClick = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
