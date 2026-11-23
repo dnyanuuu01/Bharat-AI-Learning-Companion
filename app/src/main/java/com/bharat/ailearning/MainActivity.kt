@@ -1,9 +1,16 @@
 package com.bharat.ailearning
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +36,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BharatAITeacherApp() {
     val context = LocalContext.current
@@ -35,182 +44,155 @@ fun BharatAITeacherApp() {
 
     var currentTab by remember { mutableStateOf("Profile") }
     var studentName by remember { mutableStateOf(prefs.getString("name", "") ?: "") }
-    var studentGoal by remember { mutableStateOf(prefs.getString("goal", "JEE / NEET") ?: "JEE / NEET") }
+    var studentState by remember { mutableStateOf(prefs.getString("state", "Meghalaya / All India") ?: "Meghalaya / All India") }
+    var selectedExam by remember { mutableStateOf(prefs.getString("exam", "UG: B.Tech / B.E. (Engineering)") ?: "UG: B.Tech / B.E. (Engineering)") }
+    var selectedLang by remember { mutableStateOf(prefs.getString("lang", "Hindi (हिंदी)") ?: "Hindi (हिंदी)") }
     var studyHours by remember { mutableStateOf(prefs.getString("hours", "4") ?: "4") }
+    var weakSubject by remember { mutableStateOf(prefs.getString("weak", "Core Subjects / Coding") ?: "Core Subjects / Coding") }
+    var quizScore by remember { mutableStateOf(prefs.getInt("score", 0)) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(14.dp)) {
         Text(
-            text = "Bharat AI Study Teacher (Offline)",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            text = "Bharat AI Guru (School • UG • PG)",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "100% Offline • Voice • 22 Languages • School, UG/PG, Health & Sports",
+            fontSize = 11.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
 
+        // Scrollable 11 Complete Tabs
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            listOf("Profile", "Plan", "AI Chat", "Quiz").forEach { tab ->
+            listOf("Profile", "AI Chat", "UG/PG Syllabus", "Health & Mind", "Timetable", "Scholarships", "Sports", "Colleges", "Formulas", "PYQ & Quiz", "Progress").forEach { tab ->
                 Button(
                     onClick = { currentTab = tab },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (currentTab == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                    )
                 ) {
-                    Text(tab, fontSize = 13.sp)
+                    Text(tab, fontSize = 12.sp)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             when (currentTab) {
                 "Profile" -> ProfileScreen(
                     name = studentName,
-                    goal = studentGoal,
+                    state = studentState,
+                    exam = selectedExam,
+                    lang = selectedLang,
                     hours = studyHours,
-                    onSave = { n, g, h ->
+                    weak = weakSubject,
+                    onSave = { n, st, e, l, h, w ->
                         studentName = n
-                        studentGoal = g
+                        studentState = st
+                        selectedExam = e
+                        selectedLang = l
                         studyHours = h
-                        prefs.edit().putString("name", n).putString("goal", g).putString("hours", h).apply()
+                        weakSubject = w
+                        prefs.edit()
+                            .putString("name", n)
+                            .putString("state", st)
+                            .putString("exam", e)
+                            .putString("lang", l)
+                            .putString("hours", h)
+                            .putString("weak", w)
+                            .apply()
                     }
                 )
-                "Plan" -> PlanScreen(studentName, studentGoal, studyHours)
-                "AI Chat" -> ChatScreen(studentGoal)
-                "Quiz" -> QuizScreen(studentGoal)
+                "AI Chat" -> ChatScreen(selectedExam, selectedLang, weakSubject, studentState)
+                "UG/PG Syllabus" -> SyllabusGuideScreen(selectedExam)
+                "Health & Mind" -> HealthAndWellnessScreen(selectedExam)
+                "Timetable" -> TimetableScreen(studentName, selectedExam, selectedLang, studyHours, weakSubject)
+                "Scholarships" -> ScholarshipScreen(selectedExam, studentState)
+                "Sports" -> SportsGuideScreen(studentState)
+                "Colleges" -> CollegeGuideScreen(selectedExam)
+                "Formulas" -> FormulaBankScreen(selectedExam)
+                "PYQ & Quiz" -> QuizAndPyqScreen(selectedExam, onScoreUpdate = { newScore ->
+                    quizScore = newScore
+                    prefs.edit().putInt("score", newScore).apply()
+                })
+                "Progress" -> ProgressScreen(studentName, studentState, selectedExam, selectedLang, studyHours, weakSubject, quizScore)
             }
         }
     }
 }
 
 @Composable
-fun ProfileScreen(name: String, goal: String, hours: String, onSave: (String, String, String) -> Unit) {
+fun SyllabusGuideScreen(selectedCourse: String) {
+    Text("School, UG & PG Complete Syllabus Guide", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    Text("Active Course/Goal: $selectedCourse", fontSize = 12.sp)
+    Spacer(modifier = Modifier.height(8.dp))
+
+    val syllabusList = listOf(
+        "💻 1. UG/PG Engineering & IT (B.Tech / BCA / M.Tech / MCA):\n• Core Syllabus: Engineering Maths, Data Structures & Algorithms (DSA), Operating Systems, DBMS, Computer Networks, AI/ML, Thermodynamics/Circuits.\n• Next Step: GATE, ISRO/DRDO Scientist, PSU Jobs & Software Placements.",
+        "🩺 2. UG/PG Medical & AYUSH (MBBS / BAMS / BHMS / BDS / Nursing / Pharma):\n• MBBS/BDS Syllabus: Anatomy, Physiology, Biochemistry, Pathology, Pharmacology, Microbiology, Medicine & Surgery.\n• BAMS/BHMS Syllabus: Rachana Sharir, Kriya Sharir, Dravyaguna, Kayachikitsa, Organon of Medicine & Materia Medica.\n• Next Step: NEET PG / NEXT, INI-CET, AIAPGET & Govt Medical Officer.",
+        "⚖️ 3. UG/PG Law & Judiciary (BA LLB / LLB / LLM):\n• Core Syllabus: Constitutional Law of India, Bharatiya Nyaya Sanhita (BNS), Contract Act, Jurisprudence, Family Law, Property & Corporate Law.\n• Next Step: CLAT PG, Judiciary Exam (PCS-J), UPSC Law & Supreme/High Court Practice.",
+        "🔬 4. UG/PG Science, Arts & Commerce (B.Sc/M.Sc, BA/MA, ://b.com, BBA/MBA):\n• Science/Research: Physics, Chemistry, Maths, Life Sciences, Agriculture & Data Science.\n• Arts/Commerce/Mgmt: Economics, Polity, History, Accounting, Finance, Marketing & HR.\n• Next Step: CSIR NET / UGC NET (JRF & Professor), UPSC, CAT, CA/CS & Ph.D.",
+        "📚 5. School & Entrance (Class 7th–12th, JEE, NEET, CUET):\n• Core Syllabus: Complete NCERT (Physics, Chemistry, Maths, Biology, Social Science, English & Reasoning) + Previous Year Questions (PYQs)."
+    )
+
+    syllabusList.forEach { item ->
+        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Text(text = item, modifier = Modifier.padding(10.dp), fontSize = 13.sp)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreen(
+    name: String,
+    state: String,
+    exam: String,
+    lang: String,
+    hours: String,
+    weak: String,
+    onSave: (String, String, String, String, String, String) -> Unit
+) {
     var tempName by remember { mutableStateOf(name) }
-    var tempGoal by remember { mutableStateOf(goal) }
+    var tempState by remember { mutableStateOf(state) }
+    var tempExam by remember { mutableStateOf(exam) }
+    var tempLang by remember { mutableStateOf(lang) }
     var tempHours by remember { mutableStateOf(hours) }
+    var tempWeak by remember { mutableStateOf(weak) }
+    var examExpanded by remember { mutableStateOf(false) }
+    var langExpanded by remember { mutableStateOf(false) }
     var savedMsg by remember { mutableStateOf(false) }
 
-    Text("Student Profile (Offline Storage)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = tempName,
-        onValueChange = { tempName = it; savedMsg = false },
-        label = { Text("Student Name") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = tempGoal,
-        onValueChange = { tempGoal = it; savedMsg = false },
-        label = { Text("Study Goal (e.g. JEE, NEET, Python)") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = tempHours,
-        onValueChange = { tempHours = it; savedMsg = false },
-        label = { Text("Daily Study Hours") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-
-    Button(onClick = {
-        onSave(tempName, tempGoal, tempHours)
-        savedMsg = true
-    }, modifier = Modifier.fillMaxWidth()) {
-        Text("Save Profile Offline")
-    }
-
-    if (savedMsg) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("✅ Profile Saved Successfully!", fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun PlanScreen(name: String, goal: String, hours: String) {
-    Text("Study Roadmap for ${if (name.isBlank()) "Student" else name}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-    Text("Goal: $goal ($hours hrs/day)", fontSize = 14.sp)
-    Spacer(modifier = Modifier.height(12.dp))
-
-    val weeks = listOf(
-        "Week 1: Basics & Core Concepts of $goal",
-        "Week 2: Practical Exercises & Problem Solving",
-        "Week 3: Advanced Topics & Revision",
-        "Week 4: Full Mock Tests & Doubt Clearing"
-    )
-    weeks.forEach { week ->
-        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            Text(text = week, modifier = Modifier.padding(12.dp))
-        }
-    }
-}
-
-@Composable
-fun ChatScreen(goal: String) {
-    var question by remember { mutableStateOf("") }
-    var chatHistory by remember { mutableStateOf("AI Teacher: नमस्ते! मैं आपका ऑफ़लाइन AI टीचर हूँ। $goal से जुड़ा कोई भी सवाल हिंदी या अंग्रेजी में पूछें।") }
-
-    Text("Offline AI Chat Tutor", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text(text = chatHistory, modifier = Modifier.padding(12.dp), fontSize = 14.sp)
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = question,
-        onValueChange = { question = it },
-        label = { Text("अपना सवाल लिखें...") },
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Button(onClick = {
-        if (question.isNotBlank()) {
-            val reply = "\n\nYou: $question\nAI Teacher: [Llama 3.2 Ready] '$question' के मुख्य सिद्धांतों को समझें। (असली .pte मॉडल जुड़ते ही यहाँ पूरा उत्तर जनरेट होगा)।"
-            chatHistory += reply
-            question = ""
-        }
-    }, modifier = Modifier.fillMaxWidth()) {
-        Text("Ask AI (Offline)")
-    }
-}
-
-@Composable
-fun QuizScreen(goal: String) {
-    var score by remember { mutableStateOf<Int?>(null) }
-    var selectedOption by remember { mutableStateOf(-1) }
-
-    Text("Weekly AI Quiz ($goal)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text("Q1. ऑफ़लाइन AI मॉडल चलाने के लिए कौन-सी फाइल फॉर्मेट इस्तेमाल होती है?")
-    Spacer(modifier = Modifier.height(8.dp))
-
-    val options = listOf("1. .mp4", "2. .pte (ExecuTorch)", "3. .jpg", "4. .pdf")
-    options.forEachIndexed { index, text ->
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-            RadioButton(selected = selectedOption == index, onClick = { selectedOption = index })
-            Text(text = text, modifier = Modifier.padding(top = 12.dp))
-        }
-    }
-
-    Spacer(modifier = Modifier.height(8.dp))
-    Button(onClick = {
-        score = if (selectedOption == 1) 1 else 0
-    }, modifier = Modifier.fillMaxWidth()) {
-        Text("Submit Quiz")
-    }
-
-    score?.let {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = if (it == 1) "🎉 सही जवाब! आपका स्कोर: 1/1" else "❌ गलत जवाब। सही उत्तर: .pte (ExecuTorch)",
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
+    val allCoursesAndExams = listOf(
+        // School
+        "School: Class 7th – 8th (CBSE / State Board / NMMS)",
+        "School: Class 9th – 10th Board Exam (Matric)",
+        "School: Class 11th – 12th (Science / Commerce / Arts)",
+        // Entrance Exams
+        "Entrance: JEE Main & Advanced (Engineering)",
+        "Entrance: NEET UG (MBBS / BAMS / BHMS / BDS)",
+        "Entrance: IISER / NISER / NEST (Research)",
+        "Entrance: CUET UG / PG (Central Universities)",
+        // UG Courses
+        "UG: B.Tech / B.E. (Engineering & Technology)",
+        "UG: MBBS / BDS (Allopathic Medical)",
+        "UG: BAMS / BHMS / BUMS (AYUSH Medical)",
+        "UG: B.Sc. Nursing / B.Pharm / Paramedical",
+        "UG: BA LLB / LLB (Law)",
+        "UG: B.Sc. / B.Sc. Agriculture / BCA",
+        "UG: BA / B.Com / BBA",
+        // PG Courses
+        "PG: M.Tech / MS / MCA (Tech & Engineering)",
+        "PG: MD / MS / MDS / AIAPGET (Medical PG)",
+        "PG: LLM / Judiciary (PCS-J)",
+        "PG: M.Sc. / MA / M.Com / MBA",
+        // Govt & Research Exams
+        "Govt Exam: UPSC Civil Services (IAS / IPS)",
+        "Govt Exam: SSC CGL / CHSL / Banking / NDA",
