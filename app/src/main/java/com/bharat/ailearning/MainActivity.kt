@@ -1,4 +1,4 @@
-package com.example.bharatailearningcompanion
+package com.bharat.ailearning
 
 import android.content.Context
 import android.os.Bundle
@@ -35,8 +35,8 @@ fun BharatAITeacherApp() {
 
     var currentTab by remember { mutableStateOf("Profile") }
     var studentName by remember { mutableStateOf(prefs.getString("name", "") ?: "") }
-    var studentGoal by remember { mutableStateOf(prefs.getString("goal", "Python Programming") ?: "Python Programming") }
-    var studyHours by remember { mutableStateOf(prefs.getString("hours", "2") ?: "2") }
+    var studentGoal by remember { mutableStateOf(prefs.getString("goal", "JEE / NEET") ?: "JEE / NEET") }
+    var studyHours by remember { mutableStateOf(prefs.getString("hours", "4") ?: "4") }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
@@ -46,7 +46,6 @@ fun BharatAITeacherApp() {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 4 Navigation Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -54,10 +53,7 @@ fun BharatAITeacherApp() {
             listOf("Profile", "Plan", "AI Chat", "Quiz").forEach { tab ->
                 Button(
                     onClick = { currentTab = tab },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (currentTab == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
-                    )
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(tab, fontSize = 13.sp)
                 }
@@ -66,7 +62,6 @@ fun BharatAITeacherApp() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Screen Content
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             when (currentTab) {
                 "Profile" -> ProfileScreen(
@@ -109,7 +104,7 @@ fun ProfileScreen(name: String, goal: String, hours: String, onSave: (String, St
     OutlinedTextField(
         value = tempGoal,
         onValueChange = { tempGoal = it; savedMsg = false },
-        label = { Text("Study Goal (e.g. Python, GATE)") },
+        label = { Text("Study Goal (e.g. JEE, NEET, Python)") },
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(modifier = Modifier.height(8.dp))
@@ -131,7 +126,7 @@ fun ProfileScreen(name: String, goal: String, hours: String, onSave: (String, St
 
     if (savedMsg) {
         Spacer(modifier = Modifier.height(8.dp))
-        Text("✅ Profile Saved Successfully in Phone!", color = MaterialTheme.colorScheme.primary)
+        Text("✅ Profile Saved Successfully!", fontWeight = FontWeight.Bold)
     }
 }
 
@@ -144,8 +139,8 @@ fun PlanScreen(name: String, goal: String, hours: String) {
     val weeks = listOf(
         "Week 1: Basics & Core Concepts of $goal",
         "Week 2: Practical Exercises & Problem Solving",
-        "Week 3: Advanced Topics & Mini Project",
-        "Week 4: Revision & Full Mock Tests"
+        "Week 3: Advanced Topics & Revision",
+        "Week 4: Full Mock Tests & Doubt Clearing"
     )
     weeks.forEach { week ->
         Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -177,7 +172,7 @@ fun ChatScreen(goal: String) {
 
     Button(onClick = {
         if (question.isNotBlank()) {
-            val reply = "\n\nYou: $question\nAI Teacher: [Llama 3.2 Engine Ready] '$question' को समझने के लिए पहले इसके बेसिक सिद्धांतों को देखें। (असली .pte मॉडल जुड़ते ही यहाँ पूरा उत्तर जनरेट होगा)।"
+            val reply = "\n\nYou: $question\nAI Teacher: [Llama 3.2 Ready] '$question' के मुख्य सिद्धांतों को समझें। (असली .pte मॉडल जुड़ते ही यहाँ पूरा उत्तर जनरेट होगा)।"
             chatHistory += reply
             question = ""
         }
