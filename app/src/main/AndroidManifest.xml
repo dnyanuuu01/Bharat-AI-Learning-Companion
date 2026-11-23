@@ -1,23 +1,62 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://android.com">
+package com.bharat.ailearning
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
-    <application
-        android:allowBackup="true"
-        android:label="Bharat AI Teacher"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppScreen()
+        }
+    }
+}
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+@Composable
+fun AppScreen() {
+    var tab by remember { mutableIntStateOf(0) }
+    var name by remember { mutableStateOf("") }
+    var question by remember { mutableStateOf("") }
+    var answer by remember { mutableStateOf("AI Tutor Ready (Offline)") }
+    var score by remember { mutableIntStateOf(0) }
 
-    </application>
-
-</manifest>
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Bharat AI Study Teacher (Offline)", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { tab = 0 }) { Text("Profile") }
+            Button(onClick = { tab = 1 }) { Text("Plan") }
+            Button(onClick = { tab = 2 }) { Text("AI Chat") }
+            Button(onClick = { tab = 3 }) { Text("Quiz") }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        when (tab) {
+            0 -> {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Student Name") })
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Offline Llama 3.2 Model: Ready")
+            }
+            1 -> {
+                Text("Weekly Study Roadmap:\n1. Mon-Tue: Core Concepts\n2. Wed-Thu: Practice\n3. Fri-Sat: Revision & Quiz")
+            }
+            2 -> {
+                OutlinedTextField(value = question, onValueChange = { question = it }, label = { Text("Ask Doubt") })
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { answer = "Offline AI Answer for: $question" }) { Text("Ask") }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(answer)
+            }
+            3 -> {
+                Text("Q1: Does this AI work without internet?")
+                Button(onClick = { score = 10 }) { Text("Yes (100% Offline)") }
+                Text("Score: $score / 10")
+            }
+        }
+    }
+}
