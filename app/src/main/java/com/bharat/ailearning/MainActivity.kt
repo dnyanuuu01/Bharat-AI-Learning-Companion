@@ -156,4 +156,52 @@ fun ChatScreen(exam: String, lang: String, weak: String, state: String) {
 
     val tts = remember {
         var e: TextToSpeech? = null
+        e = TextToSpeech(context) { if (it == TextToSpeech.SUCCESS) e?.language = if (lang.contains("English")) Locale.ENGLISH else Locale("hi", "IN") }
+        e
+    }
+    DisposableEffect(Unit) { onDispose { tts?.stop(); tts?.shutdown() } }
 
+    val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        if (res.resultCode == Activity.RESULT_OK) {
+            val list = res.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!list.isNullOrEmpty()) question = list[0]
+        }
+    }
+    val imgLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) { hasImage = true; chatHistory += "\n\n📷 [Photo Attached]: फोटो लोड हो गई है। सवाल का विषय लिखें/बोलें।" }
+    }
+
+    Text("Offline AI Voice, Image & Text Tutor", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    Row { Checkbox(checked = simpleMode, onCheckedChange = { simpleMode = it }); Text("Explain Like I'm 10 (आसान मोड)", modifier = Modifier.padding(top = 12.dp), fontSize = 12.sp) }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(chatHistory, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedButton(onClick = { tts?.speak(lastReply, TextToSpeech.QUEUE_FLUSH, null, null) }) { Text("🔊 सुनें", fontSize = 11.sp) }
+                OutlinedButton(onClick = { tts?.stop() }) { Text("⏹️ रोकें", fontSize = 11.sp) }
+                OutlinedButton(onClick = { imgLauncher.launch("image/*") }) { Text("📷 फोटो", fontSize = 11.sp) }
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(6.dp))
+    OutlinedTextField(value = question, onValueChange = { question = it }, label = { Text("सवाल बोलें या लिखें ($lang)...") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(6.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = {
+            val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang.contains("English")) "en-IN" else "hi-IN")
+            }
+            try { voiceLauncher.launch(i) } catch (_: Exception) {}
+        }, modifier = Modifier.weight(1f)) { Text("🎤 बोलें", fontSize = 12.sp) }
+
+        Button(onClick = {
+            if (question.isNotBlank()) {
+                val tag = if (hasImage) "[Photo] " else ""
+                val ans = "$tag[$exam] '$question' का आसान मार्गदर्शन तैयार है। (.pte AI मॉडल लोड होते ही पूरा विस्तृत उत्तर यहाँ जनरेट होगा)।"
+                lastReply = ans; chatHistory += "\n\nYou: $tag$question\nAI: $ans"; question = ""; hasImage = false
+            }
+        }, modifier = Modifier.weight(1f)) { Text("जवाब पाएं ➤", fontSize = 12.sp) }
+    }
+}
