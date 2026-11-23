@@ -64,7 +64,6 @@ fun BharatAITeacherApp() {
         )
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Scrollable 11 Complete Tabs
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -171,16 +170,13 @@ fun ProfileScreen(
     var savedMsg by remember { mutableStateOf(false) }
 
     val allCoursesAndExams = listOf(
-        // School
         "School: Class 7th – 8th (CBSE / State Board / NMMS)",
         "School: Class 9th – 10th Board Exam (Matric)",
         "School: Class 11th – 12th (Science / Commerce / Arts)",
-        // Entrance Exams
         "Entrance: JEE Main & Advanced (Engineering)",
         "Entrance: NEET UG (MBBS / BAMS / BHMS / BDS)",
         "Entrance: IISER / NISER / NEST (Research)",
         "Entrance: CUET UG / PG (Central Universities)",
-        // UG Courses
         "UG: B.Tech / B.E. (Engineering & Technology)",
         "UG: MBBS / BDS (Allopathic Medical)",
         "UG: BAMS / BHMS / BUMS (AYUSH Medical)",
@@ -188,11 +184,14 @@ fun ProfileScreen(
         "UG: BA LLB / LLB (Law)",
         "UG: B.Sc. / B.Sc. Agriculture / BCA",
         "UG: BA / B.Com / BBA",
-        // PG Courses
         "PG: M.Tech / MS / MCA (Tech & Engineering)",
         "PG: MD / MS / MDS / AIAPGET (Medical PG)",
         "PG: LLM / Judiciary (PCS-J)",
         "PG: M.Sc. / MA / M.Com / MBA",
-        // Govt & Research Exams
         "Govt Exam: UPSC Civil Services (IAS / IPS)",
         "Govt Exam: SSC CGL / CHSL / Banking / NDA",
+        "PG/Research Exam: GATE / CSIR NET / UGC NET (JRF)",
+        "Sports & Skills: Khelo India / National Trials / Coding"
+    )
+
+    val constitutionalLanguages = listOf(
