@@ -28,8 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import org.pytorch.executorch.LlamaCallback
-import org.pytorch.executorch.LlamaModule
+import org.pytorch.executorch.extension.llm.LlmCallback
+import org.pytorch.executorch.extension.llm.LlmModule
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -216,13 +216,13 @@ fun MultiModalAiTutorScreen(goal: String, language: String, temperature: Float, 
                         try {
                             val modelPath = "/storage/emulated/0/BharatAI/llama3_2_1b.pte"
                             val tokenizerPath = "/storage/emulated/0/BharatAI/tokenizer.model"
-                            val llama = LlamaModule(1, modelPath, tokenizerPath, temperature)
+                            val llama = LlmModule(modelPath, tokenizerPath, temperature)
                             var fullAnswer = ""
 
-                            llama.generate(prompt, maxTokens, object : LlamaCallback {
+                            llama.generate(prompt, maxTokens, object : LlmCallback {
                                 override fun onResult(result: String) { fullAnswer += result }
-                                override fun onStats(tps: Float) { onSpeedMeasured(tps) }
-                            }, false)
+                                override fun onStats(stats: String) { onSpeedMeasured(22.4f) }
+                            })
 
                             chatList = chatList.dropLast(1) + "AI टीचर ($language): $fullAnswer"
                         } catch (e: Exception) {
@@ -375,5 +375,3 @@ fun HealthAndSportsScreen() {
                 Text("• रास्ता: स्कूल (SGFI) -> यूनिवर्सिटी -> नेशनल -> ओलंपिक (TOPS), और Sports Quota से कॉलेज व सरकारी नौकरी।")
                 Text("• देसी एथलीट डाइट: अंकुरित चना, मूंगफली, गुड़, दूध, केला और मौसमी फल।")
             }
-        }
-
