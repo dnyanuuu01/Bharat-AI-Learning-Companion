@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import org.pytorch.executorch.LlamaCallback
+import org.pytorch.executorch.LlamaModule
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -202,10 +204,31 @@ fun MultiModalAiTutorScreen(goal: String, language: String, temperature: Float, 
             Spacer(modifier = Modifier.width(6.dp))
             Button(onClick = {
                 if (question.isNotBlank()) {
-                    val q = question; val speed = (22.5f + (temperature * 4f)); onSpeedMeasured(speed)
-                    val modeDesc = if (feynmanMode) "10 साल के बच्चे की तरह आसान उदाहरण से" else "सटीक शैक्षणिक तरीके से"
-                    val reply = "AI टीचर ($language | Speed: ${"%.1f".format(speed)} tok/s): '$goal' के लिए '$q' का समाधान ($modeDesc) — 100% ऑफलाइन।"
-                    chatList = chatList + "छात्र: $q" + reply; question = ""; photoInfo = ""
+                    val q = question
+                    val styleNote = if (feynmanMode) "10 साल के बच्चे की तरह आसान उदाहरणों से समझाओ।" else "सटीक और विस्तृत उत्तर दो।"
+                    val prompt = "तुम एक भारतीय AI शिक्षक हो। छात्र का लक्ष्य '$goal' है। हमेशा '$language' भाषा में जवाब दो। $styleNote सवाल: $q"
+
+                    chatList = chatList + "छात्र: $q" + "AI टीचर ($language): सोच रहा है..."
+                    question = ""
+                    photoInfo = ""
+
+                    Thread {
+                        try {
+                            val modelPath = "/storage/emulated/0/BharatAI/llama3_2_1b.pte"
+                            val tokenizerPath = "/storage/emulated/0/BharatAI/tokenizer.model"
+                            val llama = LlamaModule(1, modelPath, tokenizerPath, temperature)
+                            var fullAnswer = ""
+
+                            llama.generate(prompt, maxTokens, object : LlamaCallback {
+                                override fun onResult(result: String) { fullAnswer += result }
+                                override fun onStats(tps: Float) { onSpeedMeasured(tps) }
+                            }, false)
+
+                            chatList = chatList.dropLast(1) + "AI टीचर ($language): $fullAnswer"
+                        } catch (e: Exception) {
+                            chatList = chatList.dropLast(1) + "AI टीचर: कृपया Settings में ऐप को Files/Storage Permission दें। (${e.message})"
+                        }
+                    }.start()
                 }
             }) { Text("पूछें") }
         }
@@ -353,5 +376,4 @@ fun HealthAndSportsScreen() {
                 Text("• देसी एथलीट डाइट: अंकुरित चना, मूंगफली, गुड़, दूध, केला और मौसमी फल।")
             }
         }
-    }
-}
+
