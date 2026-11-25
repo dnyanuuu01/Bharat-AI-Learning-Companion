@@ -41,10 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.pytorch.executorch.Module
 import java.io.File
 import java.util.Locale
 
@@ -160,7 +160,7 @@ fun BharatAIApp(onSpeak: (String, Boolean) -> Unit, onStopSpeak: () -> Unit) {
                         title = {
                             Column {
                                 Text(strings.appTitle, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                                Text("100% Offline • Llama 3.2 (INT4) • ${studentProfile.dreamExam}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                Text("100% Offline • On-Device LLM • ${studentProfile.dreamExam}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                             }
                         },
                         actions = {
@@ -230,7 +230,7 @@ fun UniversalVoiceChatScreen(
     var userInput by remember { mutableStateOf("") }
     var isGenerating by remember { mutableStateOf(false) }
     var isListening by remember { mutableStateOf(false) }
-    var aiModule by remember { mutableStateOf<Module?>(null) }
+    var llmInference by remember { mutableStateOf<LlmInference?>(null) }
     var modelStatus by remember { mutableStateOf("AI मॉडल लोड हो रहा है...") }
 
     val messages = remember {
@@ -248,26 +248,33 @@ fun UniversalVoiceChatScreen(
                 val possibleDirs = listOf(
                     context.filesDir,
                     context.getExternalFilesDir(null),
-                    File("/data/local/tmp")
+                    File("/data/local/tmp"),
+                    File("/sdcard/Download")
                 )
                 var foundModel: File? = null
                 for (dir in possibleDirs) {
                     if (dir != null && dir.exists()) {
                         dir.listFiles()?.forEach { file ->
-                            if (file.name.endsWith(".pte")) foundModel = file
+                            if (file.name.endsWith(".bin") || file.name.endsWith(".task")) {
+                                foundModel = file
+                            }
                         }
                     }
                 }
 
                 if (foundModel != null) {
-                    val loaded = Module.load(foundModel!!.absolutePath)
+                    val options = LlmInference.LlmInferenceOptions.builder()
+                        .setModelPath(foundModel!!.absolutePath)
+                        .setMaxTokens(512)
+                        .build()
+                    val engine = LlmInference.createFromOptions(context, options)
                     withContext(Dispatchers.Main) {
-                        aiModule = loaded
-                        modelStatus = "ExecuTorch AI तैयार है (${foundModel!!.name})"
+                        llmInference = engine
+                        modelStatus = "BharatAI LLM तैयार है (${foundModel!!.name})"
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        modelStatus = "मॉडल फाइल (.pte) नहीं मिली! Android/data/com.bharat.ailearning/files/ में डालें"
+                        modelStatus = "मॉडल फाइल (.bin / .task) नहीं मिली! Download या Android/data/com.bharat.ailearning/files/ में रखें"
                     }
                 }
             } catch (e: Exception) {
@@ -292,9 +299,10 @@ fun UniversalVoiceChatScreen(
         scope.launch { listState.animateScrollToItem(messages.size - 1) }
 
         scope.launch(Dispatchers.IO) {
-            val replyText = if (aiModule != null) {
+            val replyText = if (llmInference != null) {
                 try {
-                    "BharatAI (${profile.dreamExam} Tutor): '$q' के बारे में मुख्य अवधारणा यह है कि इसे चरणबद्ध तरीके से समझा जाए। (Model: Active)"
+                    val prompt = "You are BharatAI, a smart offline study tutor for ${profile.studentClass} (${profile.dreamExam}). Answer clearly and concisely: $q"
+                    llmInference!!.generateResponse(prompt)
                 } catch (e: Exception) {
                     "AI Error: ${e.message}"
                 }
@@ -303,8 +311,9 @@ fun UniversalVoiceChatScreen(
             }
 
             withContext(Dispatchers.Main) {
-                messages[aiMsgIndex] = ChatMessage(replyText, isUser = false)
-                onSpeak(replyText, isTtsEnabled)
+                val cleanReply = replyText.trim()
+                messages[aiMsgIndex] = ChatMessage(cleanReply, isUser = false)
+                onSpeak(cleanReply, isTtsEnabled)
                 isGenerating = false
                 listState.animateScrollToItem(messages.size - 1)
             }
@@ -348,7 +357,7 @@ fun UniversalVoiceChatScreen(
             Text(
                 text = "Status: $modelStatus",
                 fontSize = 11.sp,
-                color = if (aiModule != null) MaterialTheme.colorScheme.secondary else Color(0xFFF59E0B),
+                color = if (llmInference != null) MaterialTheme.colorScheme.secondary else Color(0xFFF59E0B),
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
             )
         }
@@ -376,7 +385,7 @@ fun UniversalVoiceChatScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (msg.isUser) profile.name else "BharatAI • Llama 3.2",
+                                text = if (msg.isUser) profile.name else "BharatAI • Offline LLM",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (msg.isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
@@ -430,7 +439,7 @@ fun UniversalVoiceChatScreen(
                 singleLine = true
             )
 
-            IconButton(
+                IconButton(
                 onClick = { sendMessage(userInput) },
                 enabled = !isGenerating && userInput.isNotBlank(),
                 modifier = Modifier.size(50.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
@@ -440,6 +449,7 @@ fun UniversalVoiceChatScreen(
         }
     }
 }
+
 @Composable
 fun RoadmapAndQuizScreen(profile: StudentProfile) {
     var selectedAnswer by remember { mutableIntStateOf(-1) }
@@ -553,4 +563,3 @@ fun ProfileAndSettingsScreen(
         }
     }
 }
-
