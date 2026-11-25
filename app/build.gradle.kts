@@ -76,6 +76,7 @@ dependencies {
     implementation("org.pytorch:executorch-android:1.0.0")
     implementation("com.facebook.soloader:soloader:0.10.5")
     implementation("com.facebook.fbjni:fbjni:0.5.1")
+    implementation("com.google.mediapipe:tasks-genai:0.10.22")
 
     // Room Database (Mandatory Tech Stack)
     val roomVersion = "2.6.1"
