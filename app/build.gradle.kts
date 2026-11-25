@@ -50,7 +50,8 @@ android {
     }
 }
 
-dependencies {
+dependencies {implementation("org.pytorch:executorch-android:0.4.0")
+
     // Android Core और UI लाइब्रेरी
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
