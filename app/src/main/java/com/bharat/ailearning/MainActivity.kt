@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             setPadding(24, 24, 24, 24)
         }
         tvChatOutput = TextView(this).apply {
-            text = "नमस्ते! मैं आपका ऑफ़लाइन BharatAI शिक्षक हूँ।\nबिना इंटरनेट (Airplane Mode में भी) कोई भी सवाल पूछें।"
+            text = "नमस्ते! मैं आपका ऑफ़लाइन BharatAI शिक्षक हूँ। बिना इंटरनेट (Airplane Mode में भी) कोई भी सवाल पूछें।"
             textSize = 15f
             setTextColor(0xFFF8FAFC.toInt())
         }
@@ -249,7 +249,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         btnSend.isEnabled = false
         progressBar.visibility = View.VISIBLE
-        tvChatOutput.text = "सोच रहा हूँ ($selectedMode - $selectedLang)...\n\n"
+        tvChatOutput.text = "सोच रहा हूँ ($selectedMode - $selectedLang)..."
         etPrompt.setText("")
 
         val startTime = System.currentTimeMillis()
