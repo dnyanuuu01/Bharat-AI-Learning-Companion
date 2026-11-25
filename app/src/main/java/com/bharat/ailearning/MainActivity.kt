@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         val tvTitle = TextView(this).apply {
-            text = "🇮🇳 BharatAI Offline Learning Companion"
+            text = "BharatAI Offline Learning Companion"
             textSize = 20f
             setTextColor(0xFF38BDF8.toInt())
             setPadding(0, 0, 0, 12)
@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         rootLayout.addView(tvTitle)
 
         tvStatus = TextView(this).apply {
-            text = "⏳ AI मॉडल की जाँच हो रही है..."
+            text = "AI मॉडल की जाँच हो रही है..."
             textSize = 13f
             setTextColor(0xFFFACC15.toInt())
             setPadding(0, 0, 0, 8)
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         rootLayout.addView(tvStatus)
 
         tvMetrics = TextView(this).apply {
-            text = "📊 RAM: ~1.35 GB (< 1.8 GB) | Speed: 0.0 tok/s | Offline Mode"
+            text = "RAM: ~1.35 GB (< 1.8 GB) | Speed: 0.0 tok/s | Offline Mode"
             textSize = 12f
             setTextColor(0xFF4ADE80.toInt())
             setPadding(0, 0, 0, 20)
@@ -79,10 +79,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         val languages = arrayOf(
-            "Hindi (हिन्दी)", "English", "Bengali (বাংলা)", "Marathi (मराठी)",
-            "Telugu (తెలుగు)", "Tamil (தமிழ்)", "Gujarati (ગુજરાતી)", "Urdu (اردو)",
-            "Kannada (ಕನ್ನಡ)", "Odia (ଓଡ଼ିଆ)", "Malayalam (മലയാളം)", "Punjabi (ਪੰਜਾਬੀ)",
-            "Assamese (অসমীয়া)", "Maithili", "Santali", "Kashmiri",
+            "Hindi", "English", "Bengali", "Marathi",
+            "Telugu", "Tamil", "Gujarati", "Urdu",
+            "Kannada", "Odia", "Malayalam", "Punjabi",
+            "Assamese", "Maithili", "Santali", "Kashmiri",
             "Nepali", "Konkani", "Sindhi", "Dogri", "Manipuri", "Bodo", "Sanskrit"
         )
         spinnerLanguage = Spinner(this).apply {
@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         controlsRow.addView(spinnerLanguage, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         val modes = arrayOf(
-            "Feynman आसान मोड", "School / UG / PG Exam", "Scholarships (Ishan Uday/NMMS)",
+            "Feynman Easy Mode", "School / UG / PG Exam", "Scholarships (Ishan Uday/NMMS)",
             "NEHU / NIT / IIM Shillong Guide", "Health & BMI + Box Breathing", "Khelo India Fitness Guide"
         )
         spinnerMode = Spinner(this).apply {
@@ -134,14 +134,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         btnSend = Button(this).apply {
-            text = "🚀 पूछें (Ask AI)"
+            text = "Ask AI"
             setBackgroundColor(0xFF0284C7.toInt())
             setTextColor(0xFFFFFFFF.toInt())
         }
         btnRow.addView(btnSend, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
 
         btnSpeak = Button(this).apply {
-            text = "🔊 सुनें (TTS)"
+            text = "TTS Voice"
             setBackgroundColor(0xFF059669.toInt())
             setTextColor(0xFFFFFFFF.toInt())
         }
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun checkStoragePermissionAndLoadModel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
-                tvStatus.text = "⚠️ कृपया सेटिंग्स में 'All files access' अनुमति दें"
+                tvStatus.text = "कृपया सेटिंग्स में All files access अनुमति दें"
                 try {
                     val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                     intent.data = Uri.parse("package:$packageName")
@@ -207,14 +207,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             if (!modelFile.exists() || !tokenizerFile.exists()) {
                 withContext(Dispatchers.Main) {
-                    tvStatus.text = "❌ फ़ाइल नहीं मिली: Internal Storage/BharatAI/llama3_2_1b.pte"
+                    tvStatus.text = "फ़ाइल नहीं मिली: Internal Storage/BharatAI/llama3_2_1b.pte"
                 }
                 return@launch
             }
 
             try {
                 withContext(Dispatchers.Main) {
-                    tvStatus.text = "⏳ Llama 3.2 (1B INT4) मॉडल लोड हो रहा है..."
+                    tvStatus.text = "Llama 3.2 (1B INT4) मॉडल लोड हो रहा है..."
                 }
                 val module = LlmModule(modelFile.absolutePath, tokenizerFile.absolutePath, 0.7f)
                 val status = module.load()
@@ -223,15 +223,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         llmModule = module
                         isModelReady = true
                         val usedRamMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024)
-                        tvStatus.text = "✅ असली Offline AI तैयार है (Airplane Mode Ready)"
-                        tvMetrics.text = "📊 App Heap: ${usedRamMb}MB | Total RAM < 1.8 GB | Model: Loaded"
+                        tvStatus.text = "असली Offline AI तैयार है (Airplane Mode Ready)"
+                        tvMetrics.text = "App Heap: ${usedRamMb}MB | Total RAM < 1.8 GB | Model: Loaded"
                     } else {
-                        tvStatus.text = "❌ मॉडल लोड त्रुटि कोड: $status"
+                        tvStatus.text = "मॉडल लोड त्रुटि कोड: $status"
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    tvStatus.text = "❌ त्रुटि: ${e.localizedMessage}"
+                    tvStatus.text = "त्रुटि: ${e.localizedMessage}"
                 }
             }
         }
@@ -239,7 +239,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun askOfflineLlama(userQuestion: String) {
         if (!isModelReady || llmModule == null) {
-            Toast.makeText(this, "मॉडल अभी लोड हो रहा है या फ़ाइल उपलब्ध नहीं है", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "मॉडल लोड हो रहा है या फ़ाइल उपलब्ध नहीं है", Toast.LENGTH_SHORT).show()
             checkStoragePermissionAndLoadModel()
             return
         }
@@ -249,3 +249,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         btnSend.isEnabled = false
         progressBar.visibility = View.VISIBLE
+        tvChatOutput.text = "सोच रहा हूँ ($selectedMode - $selectedLang)...\n\n"
+        etPrompt.setText("")
+
+        val startTime = System.currentTimeMillis()
+        var tokenCount = 0
