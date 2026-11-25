@@ -530,3 +530,67 @@ fun RoadmapAndQuizScreen(profile: StudentProfile) {
                             containerColor = when {
                                 selectedAnswer == idx && idx == 1 -> Color(0xFF16A34A).copy(alpha = 0.25f)
                                 selectedAnswer == idx -> Color.Red.copy(alpha = 0.25f)
+                                else -> Color.Transparent
+                            }
+                        )
+                    ) { Text(opt) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileAndSettingsScreen(
+    strings: AppStrings,
+    profile: StudentProfile,
+    onSaveProfile: (StudentProfile) -> Unit,
+    isDarkMode: Boolean,
+    onToggleDark: (Boolean) -> Unit,
+    selectedLanguage: String,
+    onSelectLanguage: (String) -> Unit,
+    isAutoTts: Boolean,
+    onToggleTts: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf(profile.name) }
+    var studentClass by remember { mutableStateOf(profile.studentClass) }
+    var exam by remember { mutableStateOf(profile.dreamExam) }
+    var college by remember { mutableStateOf(profile.dreamCollege) }
+
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("👤 Student Profile", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = studentClass, onValueChange = { studentClass = it }, label = { Text("Class") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = exam, onValueChange = { exam = it }, label = { Text("Target Exam") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = college, onValueChange = { college = it }, label = { Text("Dream College") }, modifier = Modifier.fillMaxWidth())
+
+        Button(
+            onClick = {
+                onSaveProfile(profile.copy(name = name, studentClass = studentClass, dreamExam = exam, dreamCollege = college))
+                Toast.makeText(context, "Profile Saved!", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Save Profile") }
+
+        HorizontalDivider()
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(strings.darkModeLabel)
+            Switch(checked = isDarkMode, onCheckedChange = onToggleDark)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(strings.autoVoiceLabel)
+            Switch(checked = isAutoTts, onCheckedChange = onToggleTts)
+        }
+
+        Text(strings.languageLabel, fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("हिन्दी", "English", "অসমীয়া", "বাংলা").forEach { lang ->
+                FilterChip(selected = selectedLanguage == lang, onClick = { onSelectLanguage(lang) }, label = { Text(lang) })
+            }
+        }
+    }
+}
