@@ -265,7 +265,8 @@ fun UniversalVoiceChatScreen(
                 if (foundModel != null) {
                     val options = LlmInference.LlmInferenceOptions.builder()
                         .setModelPath(foundModel!!.absolutePath)
-                        .setMaxTokens(512)
+                        .setMaxTokens(512)                 
+                        .setPreferredBackend(LlmInference.Backend.CPU)
                         .build()
                     val engine = LlmInference.createFromOptions(context, options)
                     withContext(Dispatchers.Main) {
